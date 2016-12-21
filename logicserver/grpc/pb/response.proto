@@ -1,0 +1,8 @@
+syntax = "proto3";
+package pb;
+
+message Response{
+	uint64 	Rid = 1;	//流水号
+	string 	Code = 2;	//回应的响应码
+	string 	Desc = 3;	//回应码的描述
+}

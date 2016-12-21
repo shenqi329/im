@@ -1,0 +1,6 @@
+syntax = "proto3";
+package pb;
+
+message Request{
+	uint64 	Rid = 1;	//流水号
+}

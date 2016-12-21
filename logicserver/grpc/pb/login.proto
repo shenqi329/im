@@ -1,0 +1,27 @@
+syntax = "proto3";
+package pb;
+
+// The greeting service definition.
+service Login {
+  // Sends a greeting
+  rpc Login (DeviceLoginRequest) returns (DeviceLoginResponse) {}
+}
+
+message DeviceLoginRequest {
+	  uint64 Rid = 1;			     //流水号
+	  string Token = 11;		   //im系统的token
+    string AppId = 12;       //分配个应用的id
+   	string DeviceId = 13;    //设备的id
+   	string Platform = 14;	   //
+   	string UserId = 15;		   //用户id
+}
+
+//messageType = 14
+message DeviceLoginResponse {
+	uint64 rid = 1;		//流水号
+	string code = 2;	//回应的响应码
+	string desc = 3;	//回应码的描述
+}
+
+
+

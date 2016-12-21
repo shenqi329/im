@@ -1,0 +1,42 @@
+syntax = "proto3";
+package pb;
+
+import "response.proto";
+import "rpc.proto";
+
+// The greeting service definition.
+service Session {
+
+  // 创建会话
+  rpc CreateSession (CreateSessionRequest) returns (CreateSessionResponse) {}
+  rpc DeleteUsers(DeleteSessionUsersRequest) returns (Response) {}
+  rpc AddUsers(AddSessionUsersRequest) returns (Response) {}
+}
+
+message CreateSessionRequest{
+	uint64 	Rid = 1;		//流水号
+	RpcInfo rpcInfo = 2;
+	repeated string UserIds = 11;//会话包含的用户id
+}
+
+message CreateSessionResponse{
+	uint64 	Rid = 1;	//流水号
+	string 	Code = 2;	//回应的响应码
+	string 	Desc = 3;	//回应码的描述
+	uint64  SessionId = 11;
+}
+
+message DeleteSessionUsersRequest{
+	uint64 Rid = 1;
+	RpcInfo rpcInfo = 2;
+	uint64 SessionId  =11;
+	repeated string DeleteUserIds = 12;//需要删除的用户信息
+}
+
+message AddSessionUsersRequest{
+	uint64 Rid = 1;
+	RpcInfo rpcInfo = 2;
+	uint64 SessionId  =11;
+	repeated string AddUserIds = 12;//需要添加的用户信息
+}
+

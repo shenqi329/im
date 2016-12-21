@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package pb;
+
+// The greeting service definition.
+service Rpc {
+  // Sends a greeting
+  rpc Rpc (RpcRequest) returns (RpcResponse) {}
+}
+
+message RpcInfo{
+	uint64 ConnId = 1;
+}
+
+message RpcRequest {
+	RpcInfo RpcInfo = 1;
+	uint32 MessageType = 11;	//消息类型
+	bytes ProtoBuf = 12;		//消息对应的protoBuf数据
+}
+
+
+message RpcResponse {
+	string Code = 1;	//回应的响应码
+	string Desc = 2;	//回应码的描述
+}
+
+
+
+
+
