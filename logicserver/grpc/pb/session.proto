@@ -9,8 +9,8 @@ service Session {
 
   // 创建会话
   rpc CreateSession (CreateSessionRequest) returns (CreateSessionResponse) {}
-  rpc DeleteUsers(DeleteSessionUsersRequest) returns (Response) {}
-  rpc AddUsers(AddSessionUsersRequest) returns (Response) {}
+  rpc DeleteSessionUsers(DeleteSessionUsersRequest) returns (Response) {}
+  rpc AddSessionUsers(AddSessionUsersRequest) returns (Response) {}
 }
 
 message CreateSessionRequest{

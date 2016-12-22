@@ -1,10 +1,13 @@
 syntax = "proto3";
 package pb;
 
+import "response.proto";
+
 // The greeting service definition.
 service Login {
   // Sends a greeting
   rpc Login (DeviceLoginRequest) returns (DeviceLoginResponse) {}
+  rpc Offline(DeviceOfflineRequest) returns (Response) {}
 }
 
 message DeviceLoginRequest {
@@ -16,12 +19,16 @@ message DeviceLoginRequest {
    	string UserId = 15;		   //用户id
 }
 
-//messageType = 14
 message DeviceLoginResponse {
 	uint64 rid = 1;		//流水号
 	string code = 2;	//回应的响应码
 	string desc = 3;	//回应码的描述
 }
 
+
+message DeviceOfflineRequest{
+  string Token = 1;       //im系统的token
+  string UserId = 2;      //用户id
+}
 
 

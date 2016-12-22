@@ -23,7 +23,7 @@ func main() {
 	c.SetAfterLogin(func(c *client.Client) {
 
 		log.Println("登陆成功")
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 1; i++ {
 			createSessionRequest := &grpcPb.CreateSessionRequest{
 				Rid:     c.GetRid(),
 				UserIds: []string{"1", "2"},

@@ -14,13 +14,13 @@ func (s *Session) CreateSession(ctx context.Context, request *grpcPb.CreateSessi
 	return response, err
 }
 
-func (s *Session) DeleteUsers(ctx context.Context, request *grpcPb.DeleteSessionUsersRequest) (*grpcPb.Response, error) {
+func (s *Session) DeleteSessionUsers(ctx context.Context, request *grpcPb.DeleteSessionUsersRequest) (*grpcPb.Response, error) {
 
 	response, err := service.DeleteSessionUsers(request)
 	return response, err
 }
 
-func (s *Session) AddUsers(ctx context.Context, request *grpcPb.AddSessionUsersRequest) (*grpcPb.Response, error) {
+func (s *Session) AddSessionUsers(ctx context.Context, request *grpcPb.AddSessionUsersRequest) (*grpcPb.Response, error) {
 
 	response, err := service.AddSessionUsers(request)
 	return response, err

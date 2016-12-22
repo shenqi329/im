@@ -15,7 +15,7 @@ import (
 func messageInsert(message *logicserverBean.Message) error {
 	var err error
 	for i := 1; i <= 10; i++ {
-		_, err := dao.MessageInsert(message)
+		_, err = dao.MessageInsert(message)
 		if err == nil {
 			return nil
 		}

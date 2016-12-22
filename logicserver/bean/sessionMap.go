@@ -4,9 +4,9 @@ import ()
 
 type (
 	SessionMap struct {
-		Id        int64  `xorm:"'t_session_map_id'" json:"id,omitempty"`
-		SessionId uint64 `xorm:"'t_session_map_session_id'" json:"sessionId,omitempty"`
-		UserId    string `xorm:"'t_session_map_user_id'" json:"userId,omitempty"`
+		Id        int64  `xorm:"'id'" json:"id,omitempty"`
+		SessionId uint64 `xorm:"'session_id'" json:"sessionId,omitempty"`
+		UserId    string `xorm:"'user_id'" json:"userId,omitempty"`
 	}
 )
 

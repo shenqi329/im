@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package pb;
+
+// The greeting service definition.
+service Login {
+  // Sends a greeting
+  rpc IsLogin (IsLoginRequest) returns (IsLoginResponse) {}
+}
+
+message IsLoginRequest {
+	string UserId = 1; //用户id
+}
+
+message IsLoginResponse {
+	string Code = 1;	//回应的响应码
+	string Desc = 2;	//回应码的描述
+}
+
+
+
+
+

@@ -5,11 +5,29 @@ import (
 	dao "im/logicserver/dao"
 	logicserverError "im/logicserver/error"
 	grpcPb "im/logicserver/grpc/pb"
+	"im/logicserver/server"
 	"strconv"
 	"time"
 )
 
-func HandleLogin(deviceLoginRequest *grpcPb.DeviceLoginRequest) (protoMessage *grpcPb.DeviceLoginResponse, err error) {
+func HandleOffline(ctx *server.Context, deviceOfflineRequest *grpcPb.DeviceOfflineRequest) (protoMessage *grpcPb.Response, err error) {
+
+	protoMessage = &grpcPb.Response{
+		Code: logicserverError.CommonSuccess,
+		Desc: logicserverError.ErrorCodeToText(logicserverError.CommonSuccess),
+	}
+
+	err = ctx.HandleOffline(deviceOfflineRequest)
+	if err != nil {
+		protoMessage = &grpcPb.Response{
+			Code: logicserverError.CommonInternalServerError,
+			Desc: logicserverError.ErrorCodeToText(logicserverError.CommonInternalServerError),
+		}
+	}
+	return
+}
+
+func HandleLogin(ctx *server.Context, deviceLoginRequest *grpcPb.DeviceLoginRequest) (protoMessage *grpcPb.DeviceLoginResponse, err error) {
 
 	id, _ := strconv.ParseUint(deviceLoginRequest.Token, 10, 64)
 
@@ -48,6 +66,7 @@ func HandleLogin(deviceLoginRequest *grpcPb.DeviceLoginRequest) (protoMessage *g
 		Code: logicserverError.CommonSuccess,
 		Desc: logicserverError.ErrorCodeToText(logicserverError.CommonSuccess),
 	}
+	ctx.HandleLogin(deviceLoginRequest)
 
 	return
 }

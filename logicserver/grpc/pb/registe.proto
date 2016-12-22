@@ -18,5 +18,5 @@ message DeviceRegisteResponse{
 	uint64 Rid = 1;	//流水号
 	string Code = 2;	//回应的响应码
 	string Desc = 3;	//回应码的描述
- 	string Token = 11;	//注册后的凭证
+ 	string Token = 11;	//注册后的凭证,imToken
 }

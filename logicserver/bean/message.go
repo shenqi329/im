@@ -6,13 +6,13 @@ import (
 
 type (
 	Message struct {
-		Id         string     `xorm:"'t_message_id'" json:"id,omitempty"`
-		SessionId  uint64     `xorm:"'t_message_session_id'" json:"sessionId,omitempty"`
-		UserId     string     `xorm:"'t_message_user_id'" json:"userId,omitempty"`
-		Type       int        `xorm:"'t_message_type'" json:"type,omitempty"`
-		Content    string     `xorm:"'t_message_content'" json:"content,omitempty"`
-		Index      uint64     `xorm:"'t_message_index'" json:"index,omitempty"`
-		CreateTime *time.Time `xorm:"'t_message_create_time'" json:"createTime,omitempty"`
+		Id         string     `xorm:"'id'" json:"id,omitempty"`
+		SessionId  uint64     `xorm:"'session_id'" json:"sessionId,omitempty"`
+		UserId     string     `xorm:"'user_id'" json:"userId,omitempty"`
+		Type       int        `xorm:"'type'" json:"type,omitempty"`
+		Content    string     `xorm:"'content'" json:"content,omitempty"`
+		SyncKey    uint64     `xorm:"'sync_key'" json:"syncKey,omitempty"`
+		CreateTime *time.Time `xorm:"'create_time'" json:"createTime,omitempty"`
 	}
 )
 
