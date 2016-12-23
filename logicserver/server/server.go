@@ -10,112 +10,40 @@ import (
 	"log"
 	"net"
 	"reflect"
-	"strings"
-	"sync"
 )
 
-type Request interface {
-	GetRid() uint64
-}
-
 type Server struct {
-	grpcServer              *grpc.Server
-	tokenLoginInfoMap       map[string]*LoginInfo
-	tokenLoginInfoMapMutex  sync.Mutex
-	userIdLoginInfoMap      map[string]*LoginInfo
-	userIdLoginInfoMapMutex sync.Mutex
+	grpcServer       *grpc.Server
+	loginInfoManager *LoginInfoManager
 }
 
 func NEWServer() *Server {
 	s := &Server{
-		tokenLoginInfoMap:  make(map[string]*LoginInfo),
-		userIdLoginInfoMap: make(map[string]*LoginInfo),
+		loginInfoManager: NEWLoginInfoManager(),
 	}
 	return s
 }
 
 func (s *Server) SafeGetLoginInfoWithToken(token string) *LoginInfo {
-
-	s.tokenLoginInfoMapMutex.Lock()
-	loginInfo := s.tokenLoginInfoMap[token]
-	s.tokenLoginInfoMapMutex.Unlock()
-
-	return loginInfo
+	return s.loginInfoManager.SafeGetLoginInfoWithToken(token)
 }
 
 func (s *Server) SafeAddLoginInfo(token string, userId string) bool {
 
-	s.tokenLoginInfoMapMutex.Lock()
-	loginInfo := s.tokenLoginInfoMap[token]
-	if loginInfo == nil {
-		s.tokenLoginInfoMap[token] = &LoginInfo{
-			UserId: userId,
-			Tokens: []string{token},
-		}
-	} else {
-		s.tokenLoginInfoMap[token] = &LoginInfo{
-			UserId: userId,
-			Tokens: loginInfo.Tokens,
-		}
-	}
-	s.tokenLoginInfoMapMutex.Unlock()
-
-	s.userIdLoginInfoMapMutex.Lock()
-	loginInfo = s.userIdLoginInfoMap[userId]
-	if loginInfo == nil {
-		s.userIdLoginInfoMap[token] = &LoginInfo{
-			UserId: userId,
-			Tokens: []string{token},
-		}
-	} else {
-		temp := []string{token}
-		for _, val := range loginInfo.Tokens {
-			if !strings.EqualFold(val, token) {
-				temp = append(temp, val)
-			}
-		}
-		loginInfo.Tokens = temp
-	}
-	s.userIdLoginInfoMapMutex.Unlock()
-	return true
+	return s.loginInfoManager.SafeAddLoginInfo(token, userId)
 }
 
 func (s *Server) SafeRemoveLoginInfo(token string, userId string) bool {
-
-	s.tokenLoginInfoMapMutex.Lock()
-	delete(s.tokenLoginInfoMap, token)
-	s.tokenLoginInfoMapMutex.Unlock()
-
-	s.userIdLoginInfoMapMutex.Lock()
-
-	loginInfo := s.userIdLoginInfoMap[userId]
-	if loginInfo != nil {
-		temp := []string{}
-		for _, val := range loginInfo.Tokens {
-			if !strings.EqualFold(val, token) {
-				temp = append(temp, val)
-			}
-		}
-		loginInfo.Tokens = temp
-		if len(loginInfo.Tokens) == 0 {
-			delete(s.userIdLoginInfoMap, userId)
-		}
-	}
-	s.userIdLoginInfoMapMutex.Unlock()
-
-	return true
+	return s.SafeRemoveLoginInfo(token, userId)
 }
 
 func (s *Server) SafeGetLoginInfoWithUserId(userId string) *LoginInfo {
-	s.userIdLoginInfoMapMutex.Lock()
-	loginInfo := s.userIdLoginInfoMap[userId]
-	s.userIdLoginInfoMapMutex.Unlock()
-	return loginInfo
+	return s.SafeGetLoginInfoWithUserId(userId)
 }
 
 func (s *Server) GrpcServer() *grpc.Server {
 	if s.grpcServer == nil {
-		s.grpcServer = s.newServer()
+		s.grpcServer = s.newGrpcServer()
 	}
 	return s.grpcServer
 }
@@ -124,7 +52,10 @@ func (s *Server) Run(grpcTcpPort string) {
 	s.grpcServerServe(grpcTcpPort)
 }
 
-func (s *Server) newServer() *grpc.Server {
+func (s *Server) newGrpcServer() *grpc.Server {
+	type Request interface {
+		GetRid() uint64
+	}
 
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(func(ctx netContext.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		serverContext := &Context{

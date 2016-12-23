@@ -15,6 +15,11 @@ type Context struct {
 func (c *Context) PushMessageToClient(message *bean.Message) error {
 	log.Println(bean.StructToJsonString(message))
 
+	// userInfo := c.Server.SafeGetLoginInfoWithUserId(message.UserId)
+
+	// for value, count := range userInfo.Tokens {
+
+	// }
 	return nil
 }
 

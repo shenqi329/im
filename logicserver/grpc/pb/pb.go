@@ -15,6 +15,7 @@ const (
 	MessageTypeRPCResponse           = 6
 	MessageTypeCreateMessageRequest  = 7
 	MessageTypeCreateMessageResponse = 8
+	MessageTypeSyncMessage           = 9
 
 	MessageTypeCreateSessionRequest       = 10001
 	MessageTypeCreateSessionResponse      = 10002
@@ -33,6 +34,7 @@ var kinds = map[MessageType]func() proto.Message{
 	MessageTypeRPCResponse:           func() proto.Message { return &RpcResponse{} },
 	MessageTypeCreateMessageRequest:  func() proto.Message { return &CreateMessageRequest{} },
 	MessageTypeCreateMessageResponse: func() proto.Message { return &CreateMessageResponse{} },
+	MessageTypeSyncMessage:           func() proto.Message { return &SyncMessage{} },
 
 	MessageTypeCreateSessionRequest:       func() proto.Message { return &CreateSessionRequest{} },
 	MessageTypeCreateSessionResponse:      func() proto.Message { return &CreateSessionResponse{} },
