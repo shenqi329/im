@@ -13,7 +13,7 @@ func main() {
 	log.SetFlags(log.Lshortfile | log.LstdFlags)
 
 	c := client.Client{
-		SsoToken: "3ea3ba459d37468aab3ded6f46f6940d",
+		SsoToken: "",
 		DeviceId: "124b36dc22425556bc01605d438f4d0d",
 		Token:    "2",
 		UserId:   "2",

@@ -275,8 +275,16 @@ func (s *Server) connectIMServer(reqChan <-chan *Request, closeChan <-chan uint6
 		select {
 		case connId := <-closeChan:
 			{
-				if connMap[connId] != nil {
+				connInfo := connMap[connId]
+				if connInfo != nil {
 					delete(connMap, connId)
+					//发送消息给逻辑服务器
+					rpcClient := grpcPb.NewLoginClient(s.grpcLogicClientConn)
+					offlineRequest := &grpcPb.DeviceOfflineRequest{
+						Token:  connInfo.token,
+						UserId: connInfo.userId,
+					}
+					rpcClient.Offline(netContext.Background(), offlineRequest)
 				}
 			}
 

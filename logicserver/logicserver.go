@@ -23,7 +23,7 @@ func main() {
 	grpcPb.RegisterRpcServer(s.GrpcServer(), rpc)
 
 	//grpcPb.RegisterRegisteServer(s.GrpcServer(), &logicserverGrpc.Registe{})
-	//grpcPb.RegisterLoginServer(s.GrpcServer(), &logicserverGrpc.Login{})
+	grpcPb.RegisterLoginServer(s.GrpcServer(), &logicserverGrpc.Login{})
 	grpcPb.RegisterSessionServer(s.GrpcServer(), &logicserverGrpc.Session{})
 	//grpcPb.RegisterMessageServer(s.GrpcServer(), &logicserverGrpc.Message{})
 

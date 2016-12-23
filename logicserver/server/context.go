@@ -4,6 +4,7 @@ import (
 	"im/logicserver/bean"
 	//"im/logicserver/dao"
 	grpcPb "im/logicserver/grpc/pb"
+	//"im/logicserver/service"
 	"log"
 )
 
