@@ -5,15 +5,15 @@ import (
 	logicserverBean "im/logicserver/bean"
 	dao "im/logicserver/dao"
 	logicserverError "im/logicserver/error"
-	grpcPb "im/logicserver/grpc/pb"
 	logicserverResponse "im/logicserver/response"
+	tlpPb "im/logicserver/tlp/pb"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
 )
 
-func CheckDeviceRegistReqeust(deviceRegisteRequest *grpcPb.DeviceRegisteRequest) error {
+func CheckDeviceRegistReqeust(deviceRegisteRequest *tlpPb.DeviceRegisteRequest) error {
 
 	if err := CheckDeviceId(deviceRegisteRequest.DeviceId); err != nil {
 		return err
@@ -26,7 +26,7 @@ func CheckDeviceRegistReqeust(deviceRegisteRequest *grpcPb.DeviceRegisteRequest)
 	return nil
 }
 
-func HandleRegiste(deviceRegisteRequest *grpcPb.DeviceRegisteRequest) (protoMessage *grpcPb.DeviceRegisteResponse, err error) {
+func HandleRegiste(deviceRegisteRequest *tlpPb.DeviceRegisteRequest) (protoMessage *tlpPb.DeviceRegisteResponse, err error) {
 
 	if err = CheckDeviceRegistReqeust(deviceRegisteRequest); err != nil {
 		return
@@ -76,7 +76,7 @@ func HandleRegiste(deviceRegisteRequest *grpcPb.DeviceRegisteRequest) (protoMess
 		return
 	}
 
-	protoMessage = &grpcPb.DeviceRegisteResponse{
+	protoMessage = &tlpPb.DeviceRegisteResponse{
 		Rid:   deviceRegisteRequest.Rid,
 		Code:  logicserverError.CommonSuccess,
 		Desc:  logicserverError.ErrorCodeToText(logicserverError.CommonSuccess),

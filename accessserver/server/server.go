@@ -9,7 +9,8 @@ import (
 	accessserverGrpc "im/accessserver/grpc"
 	accessserverGrpcPb "im/accessserver/grpc/pb"
 	grpcPb "im/logicserver/grpc/pb"
-	coder "im/protocol/coder"
+	tlpPb "im/logicserver/tlp/pb"
+	coder "im/tlp/coder"
 	"log"
 	"net"
 	"os"
@@ -22,7 +23,7 @@ import (
 type Request struct {
 	message      *coder.Message
 	protoMessage proto.Message
-	messageType  grpcPb.MessageType
+	messageType  tlpPb.MessageType
 	connId       uint64
 	conn         *net.TCPConn
 }
@@ -56,9 +57,9 @@ type Server struct {
 	grpcLogicClientConn    *grpc.ClientConn
 	grpcServer             *grpc.Server
 
-	rpcRespChan      chan *grpcPb.RpcResponse
+	rpcRespChan      chan *grpcPb.ForwardTLPResponse
 	protocolRespChan chan *ProtocolResp
-	rpcReqChan       chan *accessserverGrpcPb.RpcRequest
+	rpcReqChan       chan *accessserverGrpcPb.ForwardTLPRequest
 
 	handle func(context Context) error
 }
@@ -82,9 +83,9 @@ func NEWServer(localTcpAddr string, proxyUdpAddr string) (s *Server) {
 	return &Server{
 		localTcpAddr:     localTcpAddr,
 		proxyUdpAddr:     proxyUdpAddr,
-		rpcRespChan:      make(chan *grpcPb.RpcResponse, 1000),
+		rpcRespChan:      make(chan *grpcPb.ForwardTLPResponse, 1000),
 		protocolRespChan: make(chan *ProtocolResp, 1000),
-		rpcReqChan:       make(chan *accessserverGrpcPb.RpcRequest, 1000),
+		rpcReqChan:       make(chan *accessserverGrpcPb.ForwardTLPRequest, 1000),
 	}
 }
 
@@ -124,9 +125,9 @@ func (s *Server) grpcServerServe(addr string) {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	rpc := &accessserverGrpc.Rpc{}
+	forward := &accessserverGrpc.Forward{}
 
-	accessserverGrpcPb.RegisterRpcServer(s.GrpcServer(), rpc)
+	accessserverGrpcPb.RegisterForwardToAccessServer(s.GrpcServer(), forward)
 
 	reflection.Register(s.GrpcServer())
 	if err := s.GrpcServer().Serve(lis); err != nil {
@@ -196,25 +197,25 @@ func (s *Server) ListenOnTcpPort(localTcpAddr string) {
 	}
 }
 
-func (s *Server) transToLogicServer(rpcRequest *grpcPb.RpcRequest, protocolRespChan chan<- *ProtocolResp) {
+func (s *Server) transToLogicServer(request *grpcPb.ForwardTLPRequest, protocolRespChan chan<- *ProtocolResp) {
 	//log.Println("转发给逻辑服务器")
 
-	rpcClient := grpcPb.NewRpcClient(s.grpcLogicClientConn)
-	response, err := rpcClient.Rpc(netContext.Background(), rpcRequest)
+	rpcClient := grpcPb.NewForwardToLogicClient(s.grpcLogicClientConn)
+	response, err := rpcClient.ForwardTLP(netContext.Background(), request)
 
 	if err != nil {
-		s.sendErrorProtocolToChan(accessError.CommonInternalServerError, accessError.ErrorCodeToText(accessError.CommonInternalServerError), rpcRequest, protocolRespChan)
+		s.sendErrorProtocolToChan(accessError.CommonInternalServerError, accessError.ErrorCodeToText(accessError.CommonInternalServerError), request, protocolRespChan)
 		return
 	}
 
 	if !accessError.CodeIsSuccess(response.Code) {
-		s.sendErrorProtocolToChan(response.Code, response.Desc, rpcRequest, protocolRespChan)
+		s.sendErrorProtocolToChan(response.Code, response.Desc, request, protocolRespChan)
 		return
 	}
 
 	var isLogin bool = false
 	var isLogout bool = false
-	if rpcRequest.MessageType == grpcPb.MessageTypeDeviceLoginRequest {
+	if request.MessageType == tlpPb.MessageTypeDeviceLoginRequest {
 		isLogin = true
 	}
 	// if rpcRequest.MessageType == grpcPb.MessageTypeDeviceLoginRequest {
@@ -225,33 +226,32 @@ func (s *Server) transToLogicServer(rpcRequest *grpcPb.RpcRequest, protocolRespC
 
 	protocolRespChan <- &ProtocolResp{
 		protocolBuf: protocolBuf,
-		connId:      rpcRequest.RpcInfo.ConnId,
+		connId:      request.RpcInfo.ConnId,
 		isLogin:     isLogin,
 		isLogout:    isLogout,
 	}
 }
 
-func (s *Server) sendErrorProtocolToChan(code string, desc string, rpcRequest *grpcPb.RpcRequest, protocolRespChan chan<- *ProtocolResp) {
+func (s *Server) sendErrorProtocolToChan(code string, desc string, request *grpcPb.ForwardTLPRequest, protocolRespChan chan<- *ProtocolResp) {
 	response := &grpcPb.Response{
-		Rid:  rpcRequest.Rid,
 		Code: code,
 		Desc: desc,
 	}
 	protoBuf, _ := proto.Marshal(response)
-	protocolBuf, _ := coder.EncoderMessage((int)(rpcRequest.MessageType+1), protoBuf)
+	protocolBuf, _ := coder.EncoderMessage((int)(request.MessageType+1), protoBuf)
 
 	protocolRespChan <- &ProtocolResp{
 		protocolBuf: protocolBuf,
-		connId:      rpcRequest.RpcInfo.ConnId,
+		connId:      request.RpcInfo.ConnId,
 	}
 }
 
-func (s *Server) transToBusinessServer(rpcRequest *grpcPb.RpcRequest, rpcRespChan chan<- *grpcPb.RpcResponse) {
+func (s *Server) transToBusinessServer(rpcRequest *grpcPb.ForwardTLPRequest, rpcRespChan chan<- *grpcPb.ForwardTLPResponse) {
 	//easynote业务id
 	if rpcRequest.RpcInfo.AppId == "89897" {
 		//log.Println("转发给业务服务器")
-		rpcClient := grpcPb.NewRpcClient(s.grpcEasynoteClientConn)
-		response, err := rpcClient.Rpc(netContext.Background(), rpcRequest)
+		rpcClient := grpcPb.NewForwardToLogicClient(s.grpcEasynoteClientConn)
+		response, err := rpcClient.ForwardTLP(netContext.Background(), rpcRequest)
 		if err != nil {
 			//直接返回错误给调用者[刘俊仕]
 			log.Println(err.Error())
@@ -279,7 +279,7 @@ func (s *Server) connectIMServer(reqChan <-chan *Request, closeChan <-chan uint6
 				if connInfo != nil {
 					delete(connMap, connId)
 					//发送消息给逻辑服务器
-					rpcClient := grpcPb.NewLoginClient(s.grpcLogicClientConn)
+					rpcClient := grpcPb.NewOfflineClient(s.grpcLogicClientConn)
 					offlineRequest := &grpcPb.DeviceOfflineRequest{
 						Token:  connInfo.token,
 						UserId: connInfo.userId,
@@ -297,8 +297,8 @@ func (s *Server) connectIMServer(reqChan <-chan *Request, closeChan <-chan uint6
 						isLogin: false,
 					}
 					log.Println(req.messageType)
-					if req.messageType == grpcPb.MessageTypeDeviceLoginRequest {
-						loginRequest, ok := req.protoMessage.(*grpcPb.DeviceLoginRequest)
+					if req.messageType == tlpPb.MessageTypeDeviceLoginRequest {
+						loginRequest, ok := req.protoMessage.(*tlpPb.DeviceLoginRequest)
 						log.Println(ok)
 						if ok {
 							log.Println(loginRequest.String())
@@ -309,7 +309,7 @@ func (s *Server) connectIMServer(reqChan <-chan *Request, closeChan <-chan uint6
 					}
 					connMap[req.connId] = connInfo
 				}
-				if req.message.Type == grpcPb.MessageTypeRPCRequest {
+				if req.message.Type == tlpPb.MessageTypeForwardTLPRequest {
 					//转发给具体的业务服务器
 					if !connInfo.isLogin {
 						log.Println("没有登录,不转发消息")
@@ -317,32 +317,32 @@ func (s *Server) connectIMServer(reqChan <-chan *Request, closeChan <-chan uint6
 						delete(connMap, req.connId)
 						break
 					}
-					rpcRequest, ok := req.protoMessage.(*grpcPb.RpcRequest)
-					log.Println(rpcRequest.String())
+					request, ok := req.protoMessage.(*grpcPb.ForwardTLPRequest)
+					log.Println(request.String())
 					if !ok {
 						break
 					}
-					rpcRequest.RpcInfo = &grpcPb.RpcInfo{
+					request.RpcInfo = &grpcPb.RpcInfo{
 						AppId:  connInfo.appId,
 						ConnId: (uint64)(req.connId),
 						UserId: connInfo.userId,
 						Token:  connInfo.token,
 					}
-					go s.transToBusinessServer(rpcRequest, s.rpcRespChan)
+					go s.transToBusinessServer(request, s.rpcRespChan)
 				} else {
 					//转发给im逻辑服务器
 					protoBuf, err := proto.Marshal(req.protoMessage)
 					if err == nil {
-						rpcRequest := &grpcPb.RpcRequest{}
-						rpcRequest.RpcInfo = &grpcPb.RpcInfo{
+						request := &grpcPb.ForwardTLPRequest{}
+						request.RpcInfo = &grpcPb.RpcInfo{
 							AppId:  connInfo.appId,
 							ConnId: (uint64)(req.connId),
 							UserId: connInfo.userId,
 							Token:  connInfo.token,
 						}
-						rpcRequest.MessageType = (uint32)(req.messageType)
-						rpcRequest.ProtoBuf = protoBuf
-						go s.transToLogicServer(rpcRequest, s.protocolRespChan)
+						request.MessageType = (uint32)(req.messageType)
+						request.ProtoBuf = protoBuf
+						go s.transToLogicServer(request, s.protocolRespChan)
 					}
 				}
 			}
@@ -352,7 +352,7 @@ func (s *Server) connectIMServer(reqChan <-chan *Request, closeChan <-chan uint6
 				if connInfo == nil {
 					break
 				}
-				buffer, err := coder.EncoderProtoMessage(grpcPb.MessageTypeRPCResponse, rpcResp)
+				buffer, err := coder.EncoderProtoMessage(tlpPb.MessageTypeForwardTLPResponse, rpcResp)
 				if err != nil {
 					log.Println(err)
 				}

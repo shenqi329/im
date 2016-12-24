@@ -1,0 +1,23 @@
+syntax = "proto3";
+package pb;
+
+message ForwardTLPRequest {
+	uint64 ric = 1;				//流水号
+	uint32 messageType = 11;	//消息类型
+	bytes protoBuf = 12;		//消息对应的protoBuf数据
+}
+
+
+message ForwardTLPResponse {
+	uint64 rid = 1;		//流水号
+	string code = 2;	//回应的响应码
+	string desc = 3;	//回应码的描述
+
+	uint32 messageType = 11;	//消息类型
+	bytes protoBuf = 12;		//消息对应的protoBuf数据
+}
+
+
+
+
+

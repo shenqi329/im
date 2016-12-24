@@ -1,12 +1,6 @@
 syntax = "proto3";
 package pb;
 
-// The greeting service definition.
-service Message {
-  // Sends a greeting
-  rpc CreateMessage (CreateMessageRequest) returns (CreateMessageResponse) {}
-}
-
 message CreateMessageRequest{
 	uint64 	Rid = 1;			//流水号
 	string  UserId = 2;			//用户id

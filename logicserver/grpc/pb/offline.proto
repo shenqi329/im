@@ -1,0 +1,17 @@
+syntax = "proto3";
+package pb;
+
+// The greeting service definition.
+service Offline {
+  rpc Offline(DeviceOfflineRequest) returns (DeviceOfflineResponse) {}
+}
+
+message DeviceOfflineRequest{
+  string Token = 1;       //im系统的token
+  string UserId = 2;      //用户id
+}
+
+message DeviceOfflineResponse{
+  string  Code = 1; //回应的响应码
+  string  Desc = 2; //回应码的描述
+}

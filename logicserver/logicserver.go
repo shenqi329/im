@@ -4,8 +4,9 @@ import (
 	logicserverGrpc "im/logicserver/grpc"
 	grpcPb "im/logicserver/grpc/pb"
 	"im/logicserver/server"
+	logicserverTlp "im/logicserver/tlp"
+	tlpPb "im/logicserver/tlp/pb"
 	"log"
-	//"runtime"
 )
 
 func main() {
@@ -13,19 +14,17 @@ func main() {
 
 	s := server.NEWServer()
 
-	rpc := &logicserverGrpc.Rpc{}
+	forward := &logicserverGrpc.Forward{}
 
 	//登陆注册
-	rpc.AddHandleFunc(grpcPb.MessageTypeDeviceRegisteRequest, grpcPb.MessageTypeDeviceRegisteResponse, logicserverGrpc.HandleRegiste)
-	rpc.AddHandleFunc(grpcPb.MessageTypeDeviceLoginRequest, grpcPb.MessageTypeDeviceLoginResponse, logicserverGrpc.HandleLogin)
-	rpc.AddHandleFunc(grpcPb.MessageTypeCreateMessageRequest, grpcPb.MessageTypeCreateMessageResponse, logicserverGrpc.CreateMessage)
+	forward.AddHandleFunc(tlpPb.MessageTypeDeviceRegisteRequest, tlpPb.MessageTypeDeviceRegisteResponse, logicserverTlp.HandleRegiste)
+	forward.AddHandleFunc(tlpPb.MessageTypeDeviceLoginRequest, tlpPb.MessageTypeDeviceLoginResponse, logicserverTlp.HandleLogin)
+	forward.AddHandleFunc(tlpPb.MessageTypeCreateMessageRequest, tlpPb.MessageTypeCreateMessageResponse, logicserverTlp.CreateMessage)
 
-	grpcPb.RegisterRpcServer(s.GrpcServer(), rpc)
+	grpcPb.RegisterForwardToLogicServer(s.GrpcServer(), forward)
 
-	//grpcPb.RegisterRegisteServer(s.GrpcServer(), &logicserverGrpc.Registe{})
-	grpcPb.RegisterLoginServer(s.GrpcServer(), &logicserverGrpc.Login{})
+	grpcPb.RegisterOfflineServer(s.GrpcServer(), &logicserverGrpc.Offline{})
 	grpcPb.RegisterSessionServer(s.GrpcServer(), &logicserverGrpc.Session{})
-	//grpcPb.RegisterMessageServer(s.GrpcServer(), &logicserverGrpc.Message{})
 
-	s.Run("localhost:6005")
+	s.Run("localhost:6005", "localhost:6004")
 }

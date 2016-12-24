@@ -6,20 +6,21 @@ import (
 	logicserverError "im/logicserver/error"
 	grpcPb "im/logicserver/grpc/pb"
 	"im/logicserver/server"
+	tlpPb "im/logicserver/tlp/pb"
 	"strconv"
 	"time"
 )
 
-func HandleOffline(ctx *server.Context, deviceOfflineRequest *grpcPb.DeviceOfflineRequest) (protoMessage *grpcPb.Response, err error) {
+func HandleOffline(ctx *server.Context, deviceOfflineRequest *grpcPb.DeviceOfflineRequest) (protoMessage *grpcPb.DeviceOfflineResponse, err error) {
 
-	protoMessage = &grpcPb.Response{
+	protoMessage = &grpcPb.DeviceOfflineResponse{
 		Code: logicserverError.CommonSuccess,
 		Desc: logicserverError.ErrorCodeToText(logicserverError.CommonSuccess),
 	}
 
 	err = ctx.HandleOffline(deviceOfflineRequest)
 	if err != nil {
-		protoMessage = &grpcPb.Response{
+		protoMessage = &grpcPb.DeviceOfflineResponse{
 			Code: logicserverError.CommonInternalServerError,
 			Desc: logicserverError.ErrorCodeToText(logicserverError.CommonInternalServerError),
 		}
@@ -27,7 +28,7 @@ func HandleOffline(ctx *server.Context, deviceOfflineRequest *grpcPb.DeviceOffli
 	return
 }
 
-func HandleLogin(ctx *server.Context, deviceLoginRequest *grpcPb.DeviceLoginRequest) (protoMessage *grpcPb.DeviceLoginResponse, err error) {
+func HandleLogin(ctx *server.Context, deviceLoginRequest *tlpPb.DeviceLoginRequest) (protoMessage *tlpPb.DeviceLoginResponse, err error) {
 
 	id, _ := strconv.ParseUint(deviceLoginRequest.Token, 10, 64)
 
@@ -40,7 +41,7 @@ func HandleLogin(ctx *server.Context, deviceLoginRequest *grpcPb.DeviceLoginRequ
 	has, err := dao.NewDao().Get(tokenBean)
 
 	if err != nil {
-		protoMessage = &grpcPb.DeviceLoginResponse{
+		protoMessage = &tlpPb.DeviceLoginResponse{
 			Rid:  deviceLoginRequest.Rid,
 			Code: logicserverError.CommonInternalServerError,
 			Desc: logicserverError.ErrorCodeToText(logicserverError.CommonInternalServerError),
@@ -48,7 +49,7 @@ func HandleLogin(ctx *server.Context, deviceLoginRequest *grpcPb.DeviceLoginRequ
 		return
 	}
 	if !has {
-		protoMessage = &grpcPb.DeviceLoginResponse{
+		protoMessage = &tlpPb.DeviceLoginResponse{
 			Rid:  deviceLoginRequest.Rid,
 			Code: logicserverError.CommonResourceNoExist,
 			Desc: logicserverError.ErrorCodeToText(logicserverError.CommonResourceNoExist),
@@ -61,7 +62,7 @@ func HandleLogin(ctx *server.Context, deviceLoginRequest *grpcPb.DeviceLoginRequ
 		tokenBean.LoginTime = &timeNow
 	}
 
-	protoMessage = &grpcPb.DeviceLoginResponse{
+	protoMessage = &tlpPb.DeviceLoginResponse{
 		Rid:  deviceLoginRequest.Rid,
 		Code: logicserverError.CommonSuccess,
 		Desc: logicserverError.ErrorCodeToText(logicserverError.CommonSuccess),

@@ -4,8 +4,10 @@ import (
 	netContext "golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"im/logicserver/bean"
 	logicserverError "im/logicserver/error"
 	grpcPb "im/logicserver/grpc/pb"
+	tlpPb "im/logicserver/tlp/pb"
 	"im/logicserver/util/key"
 	"log"
 	"net"
@@ -15,30 +17,53 @@ import (
 type Server struct {
 	grpcServer       *grpc.Server
 	loginInfoManager *LoginInfoManager
+	accessClient     *AccessClient
 }
 
 func NEWServer() *Server {
 	s := &Server{
 		loginInfoManager: NEWLoginInfoManager(),
+		accessClient:     NEWAccessClient(),
 	}
 	return s
 }
 
-func (s *Server) SafeGetLoginInfoWithToken(token string) *LoginInfo {
-	return s.loginInfoManager.SafeGetLoginInfoWithToken(token)
+func (s *Server) SendMessageToUser(message *bean.Message) {
+	userInfo := s.loginInfoManager.SafeGetLoginInfoWithUserId(message.UserId)
+	if userInfo == nil {
+		return
+	}
+	for _, token := range userInfo.Tokens {
+		s.accessClient.SendMessage(message, token)
+	}
 }
 
-func (s *Server) SafeAddLoginInfo(token string, userId string) bool {
+func (s *Server) SendSyncMessageToUser(userId string) {
+	userInfo := s.loginInfoManager.SafeGetLoginInfoWithUserId(userId)
+	if userInfo == nil {
+		return
+	}
+	for _, token := range userInfo.Tokens {
+		//s.accessClient.SendMessage(message, token)
+		s.accessClient.SendSyncMessageToUser(userId, token)
+	}
+}
+func (s *Server) HandleOffline(request *grpcPb.DeviceOfflineRequest) (err error) {
 
-	return s.loginInfoManager.SafeAddLoginInfo(token, userId)
+	s.loginInfoManager.SafeRemoveLoginInfo(request.Token, request.UserId)
+
+	//log.Println(bean.StructToJsonString(s.loginInfoManager.SafeGetLoginInfoWithUserId(request.UserId)))
+	//log.Println(bean.StructToJsonString(s.loginInfoManager.SafeGetLoginInfoWithToken(request.Token)))
+	return nil
 }
 
-func (s *Server) SafeRemoveLoginInfo(token string, userId string) bool {
-	return s.SafeRemoveLoginInfo(token, userId)
-}
+func (s *Server) HandleLogin(request *tlpPb.DeviceLoginRequest) (err error) {
 
-func (s *Server) SafeGetLoginInfoWithUserId(userId string) *LoginInfo {
-	return s.SafeGetLoginInfoWithUserId(userId)
+	s.loginInfoManager.SafeAddLoginInfo(request.Token, request.UserId)
+	//log.Println(bean.StructToJsonString(s.loginInfoManager.SafeGetLoginInfoWithUserId(request.UserId)))
+	//log.Println(bean.StructToJsonString(s.loginInfoManager.SafeGetLoginInfoWithToken(request.Token)))
+	s.SendSyncMessageToUser(request.UserId)
+	return nil
 }
 
 func (s *Server) GrpcServer() *grpc.Server {
@@ -48,7 +73,8 @@ func (s *Server) GrpcServer() *grpc.Server {
 	return s.grpcServer
 }
 
-func (s *Server) Run(grpcTcpPort string) {
+func (s *Server) Run(grpcTcpPort string, accessAddr string) {
+	s.accessClient.Connect(accessAddr)
 	s.grpcServerServe(grpcTcpPort)
 }
 

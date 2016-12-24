@@ -2,7 +2,7 @@ syntax = "proto3";
 package pb;
 
 import "response.proto";
-import "rpc.proto";
+import "rpcInfo.proto";
 
 // The greeting service definition.
 service Session {

@@ -5,8 +5,8 @@ import (
 	logicserverBean "im/logicserver/bean"
 	dao "im/logicserver/dao"
 	logicserverError "im/logicserver/error"
-	grpcPb "im/logicserver/grpc/pb"
 	"im/logicserver/server"
+	tlpPb "im/logicserver/tlp/pb"
 	"log"
 	"strings"
 	"time"
@@ -32,7 +32,7 @@ func messageInsert(message *logicserverBean.Message) error {
 	return err
 }
 
-func HandleCreateMessage(ctx *server.Context, request *grpcPb.CreateMessageRequest, userId string) (*grpcPb.CreateMessageResponse, error) {
+func HandleCreateMessage(ctx *server.Context, request *tlpPb.CreateMessageRequest, userId string) (*tlpPb.CreateMessageResponse, error) {
 
 	timeNow := time.Now()
 	message := &logicserverBean.Message{
@@ -52,7 +52,7 @@ func HandleCreateMessage(ctx *server.Context, request *grpcPb.CreateMessageReque
 
 	go insertMessageToUserInSession(ctx, request, userId, &timeNow)
 
-	response := &grpcPb.CreateMessageResponse{
+	response := &tlpPb.CreateMessageResponse{
 		Rid:  (uint64)(request.Rid),
 		Code: logicserverError.CommonSuccess,
 		Desc: logicserverError.ErrorCodeToText(logicserverError.CommonSuccess),
@@ -62,7 +62,7 @@ func HandleCreateMessage(ctx *server.Context, request *grpcPb.CreateMessageReque
 }
 
 //因为消息发送发已经发送成功了,这里一定要确保插入成功
-func insertMessageToUserInSession(ctx *server.Context, request *grpcPb.CreateMessageRequest, userId string, timeNow *time.Time) {
+func insertMessageToUserInSession(ctx *server.Context, request *tlpPb.CreateMessageRequest, userId string, timeNow *time.Time) {
 	if request.SessionId > 0 {
 		var sessionMaps []*logicserverBean.SessionMap
 		dao.NewDao().Find(&sessionMaps, &logicserverBean.SessionMap{

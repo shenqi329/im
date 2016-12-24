@@ -8,19 +8,19 @@ import (
 	"log"
 )
 
-type Rpc struct {
+type Forward struct {
 }
 
-func (r *Rpc) Rpc(ctx context.Context, request *accessserverGrpcPb.RpcRequest) (*accessserverGrpcPb.RpcResponse, error) {
+func (r *Forward) ForwardTLP(ctx context.Context, request *accessserverGrpcPb.ForwardTLPRequest) (*accessserverGrpcPb.ForwardTLPResponse, error) {
 
-	rpcResponse := &accessserverGrpcPb.RpcResponse{
+	rpcResponse := &accessserverGrpcPb.ForwardTLPResponse{
 		Code: accessserverError.CommonInternalServerError,
 		Desc: accessserverError.ErrorCodeToText(accessserverError.CommonInternalServerError),
 	}
 
 	log.Println(request.String())
 
-	rpcResponse = &accessserverGrpcPb.RpcResponse{
+	rpcResponse = &accessserverGrpcPb.ForwardTLPResponse{
 		Code: accessserverError.CommonSuccess,
 		Desc: accessserverError.ErrorCodeToText(accessserverError.CommonSuccess),
 	}

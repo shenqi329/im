@@ -1,0 +1,9 @@
+syntax = "proto3";
+package pb;
+
+message RpcInfo{
+	string AppId = 1;		//app唯一标识
+	uint64 ConnId = 2;		
+	string UserId = 3;
+	string Token = 4;
+}

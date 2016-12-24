@@ -5,6 +5,7 @@ import (
 	"golang.org/x/net/context"
 	logicserverError "im/logicserver/error"
 	grpcPb "im/logicserver/grpc/pb"
+	tlpPb "im/logicserver/tlp/pb"
 	"im/logicserver/util/key"
 	"log"
 )
@@ -15,16 +16,16 @@ type HandleFunc func(ctx context.Context, request proto.Message) (proto.Message,
 
 type HandleFuncInfo struct {
 	handle       HandleFunc
-	responseType grpcPb.MessageType
+	responseType tlpPb.MessageType
 }
 
-type Rpc struct {
-	handleFuncMap map[grpcPb.MessageType]*HandleFuncInfo
+type Forward struct {
+	handleFuncMap map[tlpPb.MessageType]*HandleFuncInfo
 }
 
-func (r *Rpc) AddHandleFunc(messageType grpcPb.MessageType, responseType grpcPb.MessageType, handle HandleFunc) {
+func (r *Forward) AddHandleFunc(messageType tlpPb.MessageType, responseType tlpPb.MessageType, handle HandleFunc) {
 	if r.handleFuncMap == nil {
-		r.handleFuncMap = make(map[grpcPb.MessageType]*HandleFuncInfo)
+		r.handleFuncMap = make(map[tlpPb.MessageType]*HandleFuncInfo)
 	}
 	r.handleFuncMap[messageType] = &HandleFuncInfo{
 		handle:       handle,
@@ -32,10 +33,9 @@ func (r *Rpc) AddHandleFunc(messageType grpcPb.MessageType, responseType grpcPb.
 	}
 }
 
-func (r *Rpc) Rpc(ctx context.Context, request *grpcPb.RpcRequest) (*grpcPb.RpcResponse, error) {
+func (r *Forward) ForwardTLP(ctx context.Context, request *grpcPb.ForwardTLPRequest) (*grpcPb.ForwardTLPResponse, error) {
 
-	rpcResponse := &grpcPb.RpcResponse{
-		Rid:    request.GetRid(),
+	rpcResponse := &grpcPb.ForwardTLPResponse{
 		Code:   logicserverError.CommonInternalServerError,
 		Desc:   logicserverError.ErrorCodeToText(logicserverError.CommonInternalServerError),
 		ConnId: request.RpcInfo.ConnId,
@@ -46,13 +46,13 @@ func (r *Rpc) Rpc(ctx context.Context, request *grpcPb.RpcRequest) (*grpcPb.RpcR
 	ctx = context.WithValue(ctx, key.Token, request.RpcInfo.Token)
 	ctx = context.WithValue(ctx, key.ConnId, request.RpcInfo.ConnId)
 
-	handleFuncInfo := r.handleFuncMap[(grpcPb.MessageType)(request.MessageType)]
+	handleFuncInfo := r.handleFuncMap[(tlpPb.MessageType)(request.MessageType)]
 	if handleFuncInfo == nil {
 		log.Println("不支持的类型")
 		return rpcResponse, nil
 	}
 
-	protoMessage := grpcPb.Factory((grpcPb.MessageType)(request.MessageType))
+	protoMessage := tlpPb.Factory((tlpPb.MessageType)(request.MessageType))
 	err := proto.Unmarshal(request.ProtoBuf, protoMessage)
 	if err != nil {
 		log.Println(err.Error())
@@ -75,8 +75,7 @@ func (r *Rpc) Rpc(ctx context.Context, request *grpcPb.RpcRequest) (*grpcPb.RpcR
 		return rpcResponse, nil
 	}
 
-	rpcResponse = &grpcPb.RpcResponse{
-		Rid:         request.GetRid(),
+	rpcResponse = &grpcPb.ForwardTLPResponse{
 		Code:        logicserverError.CommonSuccess,
 		Desc:        logicserverError.ErrorCodeToText(logicserverError.CommonSuccess),
 		MessageType: (uint32)(handleFuncInfo.responseType),

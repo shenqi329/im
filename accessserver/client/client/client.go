@@ -2,8 +2,8 @@ package client
 
 import (
 	"github.com/golang/protobuf/proto"
-	grpcPb "im/logicserver/grpc/pb"
-	"im/protocol/coder"
+	tlpPb "im/logicserver/tlp/pb"
+	"im/tlp/coder"
 	"log"
 	"net"
 	"runtime"
@@ -47,14 +47,14 @@ func (c *Client) SetAfterLogin(afterLogin func(c *Client)) {
 }
 
 func (c *Client) registe() {
-	registeRequest := &grpcPb.DeviceRegisteRequest{
+	registeRequest := &tlpPb.DeviceRegisteRequest{
 		Rid:      c.GetRid(),
 		SsoToken: c.SsoToken,
 		AppId:    "89897",
 		DeviceId: c.DeviceId,
 		Platform: "windows",
 	}
-	buffer, err := coder.EncoderProtoMessage(grpcPb.MessageTypeDeviceRegisteRequest, registeRequest)
+	buffer, err := coder.EncoderProtoMessage(tlpPb.MessageTypeDeviceRegisteRequest, registeRequest)
 	if err != nil {
 		log.Println(err.Error())
 	}
@@ -65,7 +65,7 @@ func (c *Client) registe() {
 func (c *Client) login() {
 	log.Println(c.Token)
 	if runtime.GOOS == "windows" {
-		loginRequest := &grpcPb.DeviceLoginRequest{
+		loginRequest := &tlpPb.DeviceLoginRequest{
 			Rid:      c.GetRid(),
 			Token:    c.Token,
 			UserId:   c.UserId,
@@ -73,14 +73,14 @@ func (c *Client) login() {
 			DeviceId: c.DeviceId,
 			Platform: "windows",
 		}
-		buffer, err := coder.EncoderProtoMessage(grpcPb.MessageTypeDeviceLoginRequest, loginRequest)
+		buffer, err := coder.EncoderProtoMessage(tlpPb.MessageTypeDeviceLoginRequest, loginRequest)
 		if err != nil {
 			log.Println(err.Error())
 		}
 		c.conn.Write(buffer)
 		c.loginState = LoginStateInLogin
 	} else {
-		loginRequest := &grpcPb.DeviceLoginRequest{
+		loginRequest := &tlpPb.DeviceLoginRequest{
 			Rid:      c.GetRid(),
 			Token:    c.Token,
 			UserId:   c.UserId,
@@ -89,7 +89,7 @@ func (c *Client) login() {
 			Platform: "windows",
 		}
 
-		buffer, err := coder.EncoderProtoMessage(grpcPb.MessageTypeDeviceLoginRequest, loginRequest)
+		buffer, err := coder.EncoderProtoMessage(tlpPb.MessageTypeDeviceLoginRequest, loginRequest)
 		if err != nil {
 			log.Println(err.Error())
 		}
@@ -160,7 +160,7 @@ func (c *Client) handleConnection(conn *net.TCPConn) {
 
 func (c *Client) handleMessage(conn *net.TCPConn, message *coder.Message) {
 
-	protoMessage := grpcPb.Factory((grpcPb.MessageType)(message.Type))
+	protoMessage := tlpPb.Factory((tlpPb.MessageType)(message.Type))
 
 	if protoMessage == nil {
 		log.Println("未识别的消息")
@@ -175,17 +175,19 @@ func (c *Client) handleMessage(conn *net.TCPConn, message *coder.Message) {
 		return
 	}
 	c.recvCount = atomic.AddUint32(&c.recvCount, 1)
+
 	log.Println("userId = ", c.UserId, "token = ", c.Token, "recvMsg count = ", c.recvCount, "context:", proto.CompactTextString(protoMessage))
-	if (grpcPb.MessageType)(message.Type) == grpcPb.MessageTypeDeviceLoginResponse {
-		response := protoMessage.(*grpcPb.DeviceLoginResponse)
+
+	if (tlpPb.MessageType)(message.Type) == tlpPb.MessageTypeDeviceLoginResponse {
+		response := protoMessage.(*tlpPb.DeviceLoginResponse)
 		if strings.EqualFold(response.Code, "00000001") {
 			c.loginState = LoginStateLogined
 			go c.afterLogin(c)
 		} else {
 			log.Print("登陆失败")
 		}
-	} else if (grpcPb.MessageType)(message.Type) == grpcPb.MessageTypeDeviceRegisteResponse {
-		response := protoMessage.(*grpcPb.DeviceRegisteResponse)
+	} else if (tlpPb.MessageType)(message.Type) == tlpPb.MessageTypeDeviceRegisteResponse {
+		response := protoMessage.(*tlpPb.DeviceRegisteResponse)
 		if strings.EqualFold(response.Code, "00000001") {
 			c.loginState = LoginStateRegisted
 			c.Token = response.Token

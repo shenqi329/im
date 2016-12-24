@@ -4,7 +4,7 @@ package pb;
 //import "response.proto";
 
 message SyncMessage{
-	  int32  type       = 11;
+	int32  type       = 11;
     string Id         = 12;
     uint64 SessionId  = 13;
     string UserId     = 14;

@@ -1,11 +1,6 @@
 syntax = "proto3";
 package pb;
 
-service Registe {
-  // Sends a greeting
-  rpc Registe (DeviceRegisteRequest) returns (DeviceRegisteResponse) {}
-}
-
 message DeviceRegisteRequest{
 	uint64 Rid = 1;			//流水号
 	string SsoToken = 11;	//统一登陆系统登陆token

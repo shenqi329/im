@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package pb;
+
+//转发消息给接入服务器
+service ForwardToAccess{
+  // Sends a greeting
+  rpc ForwardTLP (ForwardTLPRequest) returns (ForwardTLPResponse) {}
+}
+
+message ForwardTLPRequest {
+	string UserId = 1;			//用户id
+	string Token = 	2; 			//imToken
+	int32  Type = 	3;			//tlp消息体类型
+	bytes  ProtoBuf = 4;	//protoMessage消息buf
+}
+
+message ForwardTLPResponse {
+	string Code = 1;	//回应的响应码
+	string Desc = 2;	//回应码的描述
+}
+
+
+
+
+
