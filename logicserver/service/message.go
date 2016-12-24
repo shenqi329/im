@@ -41,7 +41,7 @@ func HandleCreateMessage(ctx *server.Context, request *tlpPb.CreateMessageReques
 		UserId:     userId,
 		Type:       (int)(request.Type),
 		Content:    request.Content,
-		CreateTime: &timeNow,
+		CreateTime: timeNow,
 	}
 
 	err := messageInsert(message)
@@ -80,7 +80,7 @@ func insertMessageToUserInSession(ctx *server.Context, request *tlpPb.CreateMess
 				UserId:     sessionMap.UserId,
 				Type:       (int)(request.Type),
 				Content:    request.Content,
-				CreateTime: timeNow,
+				CreateTime: *timeNow,
 			}
 			err := messageInsert(message)
 			if err == nil {

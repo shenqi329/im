@@ -168,7 +168,7 @@ func (c *Client) handleMessage(conn *net.TCPConn, message *coder.Message) {
 		return
 	}
 
-	if err := proto.Unmarshal(message.Body, protoMessage); err != nil {
+	if err := proto.Unmarshal(message.ProtoBuf, protoMessage); err != nil {
 		log.Println(err.Error())
 		log.Println("消息格式错误")
 		conn.Close()

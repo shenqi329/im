@@ -4,15 +4,15 @@ import (
 	proto "github.com/golang/protobuf/proto"
 )
 
-func EncoderMessage(messageType int, message []byte) ([]byte, error) {
+func EncoderProtoBuf(messageType int, protoBuf []byte) ([]byte, error) {
 
-	length := len(message)
+	length := len(protoBuf)
 
 	messageByte := encodeTypeToByte(messageType)
 	lengthByte := encodeLengthToByte(length)
 
 	messageByte = append(messageByte, lengthByte...)
-	messageByte = append(messageByte, message...)
+	messageByte = append(messageByte, protoBuf...)
 
 	return messageByte, nil
 }
@@ -24,7 +24,7 @@ func EncoderProtoMessage(messageType int, message proto.Message) ([]byte, error)
 		return nil, err
 	}
 
-	return EncoderMessage(messageType, b)
+	return EncoderProtoBuf(messageType, b)
 }
 
 func encodeLengthToByte(length int) []byte {

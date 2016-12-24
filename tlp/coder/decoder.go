@@ -11,12 +11,12 @@ type Decoder struct {
 }
 
 type Message struct {
-	Type int    //消息类型
-	Body []byte //消息的具体内容
+	Type     int    //消息类型
+	ProtoBuf []byte //消息的具体内容
 }
 
 func (m *Message) Encode() []byte {
-	msg, _ := EncoderMessage(m.Type, m.Body)
+	msg, _ := EncoderProtoBuf(m.Type, m.ProtoBuf)
 	return msg
 }
 
@@ -72,8 +72,8 @@ func (d *Decoder) decoder(buf []byte) (messages []*Message, err error) {
 	}
 
 	message := &Message{
-		Type: *d.messageType,
-		Body: d.buffer[:*d.messageLength],
+		Type:     *d.messageType,
+		ProtoBuf: d.buffer[:*d.messageLength],
 	}
 	//log.Println(message.MessageBuf)
 

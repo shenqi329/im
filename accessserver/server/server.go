@@ -6,8 +6,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	accessError "im/accessserver/error"
-	accessserverGrpc "im/accessserver/grpc"
 	accessserverGrpcPb "im/accessserver/grpc/pb"
+	"im/accessserver/util/key"
 	grpcPb "im/logicserver/grpc/pb"
 	tlpPb "im/logicserver/tlp/pb"
 	coder "im/tlp/coder"
@@ -44,24 +44,20 @@ type ConnectInfo struct {
 }
 
 type Server struct {
-	rid         uint64 //请求流水号
-	ridMutex    sync.Mutex
-	connCount   int32
-	connIdMutex sync.Mutex
-	connId      uint64 //请求的id
-
-	localTcpAddr string
-	proxyUdpAddr string
-
+	rid                    uint64 //请求流水号
+	ridMutex               sync.Mutex
+	connCount              int32
+	connIdMutex            sync.Mutex
+	connId                 uint64 //请求的id
+	localTcpAddr           string
+	proxyUdpAddr           string
 	grpcEasynoteClientConn *grpc.ClientConn
 	grpcLogicClientConn    *grpc.ClientConn
 	grpcServer             *grpc.Server
-
-	rpcRespChan      chan *grpcPb.ForwardTLPResponse
-	protocolRespChan chan *ProtocolResp
-	rpcReqChan       chan *accessserverGrpcPb.ForwardTLPRequest
-
-	handle func(context Context) error
+	rpcRespChan            chan *grpcPb.ForwardTLPResponse
+	protocolRespChan       chan *ProtocolResp
+	forwardTLPRequestChan  chan *accessserverGrpcPb.ForwardTLPRequest
+	handle                 func(context Context) error
 }
 
 func (s *Server) createRID() uint64 {
@@ -81,11 +77,11 @@ func (s *Server) createConnId() uint64 {
 func NEWServer(localTcpAddr string, proxyUdpAddr string) (s *Server) {
 
 	return &Server{
-		localTcpAddr:     localTcpAddr,
-		proxyUdpAddr:     proxyUdpAddr,
-		rpcRespChan:      make(chan *grpcPb.ForwardTLPResponse, 1000),
-		protocolRespChan: make(chan *ProtocolResp, 1000),
-		rpcReqChan:       make(chan *accessserverGrpcPb.ForwardTLPRequest, 1000),
+		localTcpAddr:          localTcpAddr,
+		proxyUdpAddr:          proxyUdpAddr,
+		rpcRespChan:           make(chan *grpcPb.ForwardTLPResponse, 1000),
+		protocolRespChan:      make(chan *ProtocolResp, 1000),
+		forwardTLPRequestChan: make(chan *accessserverGrpcPb.ForwardTLPRequest, 1000),
 	}
 }
 
@@ -109,6 +105,12 @@ func (s *Server) Run(grpcServerAddr string) {
 	s.ListenOnTcpPort(s.localTcpAddr)
 }
 
+func (s *Server) ForwardTLP(request *accessserverGrpcPb.ForwardTLPRequest) (*accessserverGrpcPb.ForwardTLPResponse, error) {
+	log.Println("ForwardTLP")
+	s.forwardTLPRequestChan <- request
+	return nil, nil
+}
+
 func (s *Server) grpcConnectServer(tcpAddr string) *grpc.ClientConn {
 	//Set up a connection to the server.
 	conn, err := grpc.Dial(tcpAddr, grpc.WithInsecure())
@@ -125,10 +127,6 @@ func (s *Server) grpcServerServe(addr string) {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	forward := &accessserverGrpc.Forward{}
-
-	accessserverGrpcPb.RegisterForwardToAccessServer(s.GrpcServer(), forward)
-
 	reflection.Register(s.GrpcServer())
 	if err := s.GrpcServer().Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
@@ -138,22 +136,14 @@ func (s *Server) grpcServerServe(addr string) {
 func (s *Server) newGrpcServer() *grpc.Server {
 
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(func(ctx netContext.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-		ctx = netContext.WithValue(ctx, "", s.rpcRespChan)
+
+		ctx = netContext.WithValue(ctx, key.Server, s)
 		response, err := handler(ctx, req)
 		v := reflect.ValueOf(response)
 		if !v.IsValid() || v.IsNil() {
-			request, ok := req.(accessserverGrpc.Request)
-			if ok {
-				response = &grpcPb.Response{
-					Rid:  request.GetRid(),
-					Code: accessError.CommonInternalServerError,
-					Desc: accessError.ErrorCodeToText(accessError.CommonInternalServerError),
-				}
-			} else {
-				response = &grpcPb.Response{
-					Code: accessError.CommonInternalServerError,
-					Desc: accessError.ErrorCodeToText(accessError.CommonInternalServerError),
-				}
+			response = &grpcPb.Response{
+				Code: accessError.CommonInternalServerError,
+				Desc: accessError.ErrorCodeToText(accessError.CommonInternalServerError),
 			}
 		}
 		return response, nil
@@ -222,7 +212,7 @@ func (s *Server) transToLogicServer(request *grpcPb.ForwardTLPRequest, protocolR
 
 	// }
 
-	protocolBuf, _ := coder.EncoderMessage((int)(response.MessageType), response.ProtoBuf)
+	protocolBuf, _ := coder.EncoderProtoBuf((int)(response.MessageType), response.ProtoBuf)
 
 	protocolRespChan <- &ProtocolResp{
 		protocolBuf: protocolBuf,
@@ -238,7 +228,7 @@ func (s *Server) sendErrorProtocolToChan(code string, desc string, request *grpc
 		Desc: desc,
 	}
 	protoBuf, _ := proto.Marshal(response)
-	protocolBuf, _ := coder.EncoderMessage((int)(request.MessageType+1), protoBuf)
+	protocolBuf, _ := coder.EncoderProtoBuf((int)(request.MessageType+1), protoBuf)
 
 	protocolRespChan <- &ProtocolResp{
 		protocolBuf: protocolBuf,
@@ -270,6 +260,7 @@ func (s *Server) connectIMServer(reqChan <-chan *Request, closeChan <-chan uint6
 	//rpcRespChan := make(chan *grpcPb.RpcResponse, 1000)
 	//protocolRespChan := make(chan *ProtocolResp, 1000)
 	connMap := make(map[uint64]*ConnectInfo)
+	tokenMap := make(map[string]*ConnectInfo)
 
 	for {
 		select {
@@ -278,6 +269,7 @@ func (s *Server) connectIMServer(reqChan <-chan *Request, closeChan <-chan uint6
 				connInfo := connMap[connId]
 				if connInfo != nil {
 					delete(connMap, connId)
+					delete(tokenMap, connInfo.token)
 					//发送消息给逻辑服务器
 					rpcClient := grpcPb.NewOfflineClient(s.grpcLogicClientConn)
 					offlineRequest := &grpcPb.DeviceOfflineRequest{
@@ -308,6 +300,7 @@ func (s *Server) connectIMServer(reqChan <-chan *Request, closeChan <-chan uint6
 						}
 					}
 					connMap[req.connId] = connInfo
+					tokenMap[connInfo.token] = connInfo
 				}
 				if req.message.Type == tlpPb.MessageTypeForwardTLPRequest {
 					//转发给具体的业务服务器
@@ -315,6 +308,7 @@ func (s *Server) connectIMServer(reqChan <-chan *Request, closeChan <-chan uint6
 						log.Println("没有登录,不转发消息")
 						connInfo.conn.Close()
 						delete(connMap, req.connId)
+						delete(tokenMap, connInfo.token)
 						break
 					}
 					request, ok := req.protoMessage.(*grpcPb.ForwardTLPRequest)
@@ -368,18 +362,17 @@ func (s *Server) connectIMServer(reqChan <-chan *Request, closeChan <-chan uint6
 					connInfo.isLogin = false
 				}
 			}
-		case rpcReq := <-s.rpcReqChan:
+		case request := <-s.forwardTLPRequestChan:
 			{
-				rpcReq = rpcReq
-				// connInfo := connMap[rpcReq.ConnId]
-				// if connInfo == nil {
-				// 	break
-				// }
-				// buffer, err := coder.EncoderProtoMessage(rpcReq.MessageType, rpcReq.ProtoBuf)
-				// if err != nil {
-				// 	log.Println(err)
-				// }
-				// go connInfo.conn.Write(buffer)
+				connInfo := tokenMap[request.Token]
+				if connInfo == nil {
+					break
+				}
+				buffer, err := coder.EncoderProtoBuf((int)(request.Type), request.ProtoBuf)
+				if err != nil {
+					log.Println(err)
+				}
+				go connInfo.conn.Write(buffer)
 			}
 		}
 	}

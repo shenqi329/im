@@ -46,18 +46,20 @@ func (a *AccessClient) SendSyncMessageToUser(userId string, token string) error 
 	return a.SendSyncMessageFromKeyToKeyToUser(syncKey, maxSyncKey, userId, token)
 }
 
-func (a *AccessClient) SendSyncMessageFromKeyToKeyToUser(fromSyncKey int64, toSyncKey int64, userId string, token string) error {
+func (a *AccessClient) SendSyncMessageFromKeyToKeyToUser(fromSyncKey uint64, toSyncKey uint64, userId string, token string) error {
 
 	forwardClient := grpcPb.NewForwardToAccessClient(a.conn)
 	for syncKey := fromSyncKey; syncKey <= toSyncKey; syncKey++ {
-		message := bean.Message{
+		message := &bean.Message{
 			UserId:  userId,
 			SyncKey: syncKey,
 		}
-		bool, err := dao.NewDao().Get(message)
+		_, err := dao.NewDao().Get(message)
 		if err != nil {
+			log.Println(err)
 			return err
 		}
+		log.Println(bean.StructToJsonString(message))
 		syncMessage := &tlpPb.SyncMessage{
 			Type:       (int32)(message.Type),
 			Id:         message.Id,
@@ -76,6 +78,7 @@ func (a *AccessClient) SendSyncMessageFromKeyToKeyToUser(fromSyncKey int64, toSy
 		}
 		_, err = forwardClient.ForwardTLP(netContext.Background(), request)
 		if err != nil {
+			log.Println(err)
 			return err
 		}
 	}

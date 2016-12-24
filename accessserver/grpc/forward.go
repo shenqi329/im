@@ -5,6 +5,8 @@ import (
 	"golang.org/x/net/context"
 	accessserverError "im/accessserver/error"
 	accessserverGrpcPb "im/accessserver/grpc/pb"
+	"im/accessserver/server"
+	"im/accessserver/util/key"
 	"log"
 )
 
@@ -17,8 +19,10 @@ func (r *Forward) ForwardTLP(ctx context.Context, request *accessserverGrpcPb.Fo
 		Code: accessserverError.CommonInternalServerError,
 		Desc: accessserverError.ErrorCodeToText(accessserverError.CommonInternalServerError),
 	}
-
+	s := ctx.Value(key.Server).(*server.Server)
 	log.Println(request.String())
+
+	s.ForwardTLP(request)
 
 	rpcResponse = &accessserverGrpcPb.ForwardTLPResponse{
 		Code: accessserverError.CommonSuccess,
