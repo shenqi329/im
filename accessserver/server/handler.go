@@ -16,7 +16,7 @@ func Handle(context Context) error {
 		context.Close()
 		return nil
 	}
-	if err := proto.Unmarshal(context.Message().Body, protoMessage); err != nil {
+	if err := proto.Unmarshal(context.Message().ProtoBuf, protoMessage); err != nil {
 		log.Println(err.Error())
 		context.Close()
 		return nil

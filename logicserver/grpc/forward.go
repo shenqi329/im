@@ -65,7 +65,10 @@ func (r *Forward) ForwardTLP(ctx context.Context, request *grpcPb.ForwardTLPRequ
 		return rpcResponse, nil
 	}
 	if response == nil {
-		log.Println("没有返回数据")
+		rpcResponse = &grpcPb.ForwardTLPResponse{
+			Code: logicserverError.CommonSuccess,
+			Desc: logicserverError.ErrorCodeToText(logicserverError.CommonSuccess),
+		}
 		return rpcResponse, nil
 	}
 

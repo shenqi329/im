@@ -20,6 +20,7 @@ func main() {
 	forward.AddHandleFunc(tlpPb.MessageTypeDeviceRegisteRequest, tlpPb.MessageTypeDeviceRegisteResponse, logicserverTlp.HandleRegiste)
 	forward.AddHandleFunc(tlpPb.MessageTypeDeviceLoginRequest, tlpPb.MessageTypeDeviceLoginResponse, logicserverTlp.HandleLogin)
 	forward.AddHandleFunc(tlpPb.MessageTypeCreateMessageRequest, tlpPb.MessageTypeCreateMessageResponse, logicserverTlp.CreateMessage)
+	forward.AddHandleFunc(tlpPb.MessageTypeSyncFinResponse, 0, logicserverTlp.SyncFinResponse)
 
 	grpcPb.RegisterForwardToLogicServer(s.GrpcServer(), forward)
 

@@ -3,6 +3,7 @@ package pb;
 
 //import "response.proto";
 
+//同步消息
 message SyncMessage{
 	int32  type       = 11;
     string Id         = 12;
@@ -13,3 +14,11 @@ message SyncMessage{
     int64  CreateTime = 17;
 }
 
+message SyncFinInform{
+	uint64 SyncKey = 11;
+}
+
+
+message SyncFinResponse{
+	uint64 SyncKey = 11;
+}

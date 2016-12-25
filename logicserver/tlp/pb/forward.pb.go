@@ -23,6 +23,8 @@ It has these top-level messages:
 	DeviceRegisteRequest
 	DeviceRegisteResponse
 	SyncMessage
+	SyncFinInform
+	SyncFinResponse
 */
 package pb
 

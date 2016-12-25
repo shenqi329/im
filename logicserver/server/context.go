@@ -12,7 +12,6 @@ type Context struct {
 }
 
 func (c *Context) PushMessageToClient(message *bean.Message) error {
-
 	c.Server.SendMessageToUser(message)
 	return nil
 }

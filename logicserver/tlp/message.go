@@ -11,13 +11,13 @@ import (
 	"log"
 )
 
-func CreateMessage(context context.Context, message proto.Message) (proto.Message, error) {
+func CreateMessage(ctx context.Context, message proto.Message) (proto.Message, error) {
 
 	log.Println("CreateMessage")
 
 	request := message.(*tlpPb.CreateMessageRequest)
-	userId := context.Value(key.UserId).(string)
-	serverContext := context.Value(key.Context).(*server.Context)
+	userId := ctx.Value(key.UserId).(string)
+	serverContext := ctx.Value(key.Context).(*server.Context)
 
 	protoMessage, err := service.HandleCreateMessage(serverContext, request, userId)
 
@@ -31,4 +31,16 @@ func CreateMessage(context context.Context, message proto.Message) (proto.Messag
 		return reply, nil
 	}
 	return protoMessage, nil
+}
+
+func SyncFinResponse(ctx context.Context, messsage proto.Message) (proto.Message, error) {
+	log.Println("SyncInform")
+
+	response := messsage.(*tlpPb.SyncFinResponse)
+	userId := ctx.Value(key.UserId).(string)
+
+	serverContext := ctx.Value(key.Context).(*server.Context)
+	err := service.HandleSyncFinResponse(serverContext, response, userId)
+
+	return nil, err
 }

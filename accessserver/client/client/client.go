@@ -161,9 +161,8 @@ func (c *Client) handleConnection(conn *net.TCPConn) {
 func (c *Client) handleMessage(conn *net.TCPConn, message *coder.Message) {
 
 	protoMessage := tlpPb.Factory((tlpPb.MessageType)(message.Type))
-
 	if protoMessage == nil {
-		log.Println("未识别的消息")
+		log.Println("未识别的消息:", message.Type)
 		conn.Close()
 		return
 	}
@@ -195,5 +194,15 @@ func (c *Client) handleMessage(conn *net.TCPConn, message *coder.Message) {
 		} else {
 			log.Print("注册失败")
 		}
+	} else if (tlpPb.MessageType)(message.Type) == tlpPb.MessageTypeSyncFinInform {
+		inform := protoMessage.(*tlpPb.SyncFinInform)
+		request := &tlpPb.SyncFinResponse{
+			SyncKey: inform.SyncKey,
+		}
+		buffer, err := coder.EncoderProtoMessage(tlpPb.MessageTypeSyncFinResponse, request)
+		if err != nil {
+			log.Println(err.Error())
+		}
+		c.conn.Write(buffer)
 	}
 }

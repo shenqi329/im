@@ -39,16 +39,18 @@ func (a *AccessClient) SendSyncMessageToUser(userId string, token string) error 
 	if err != nil {
 		return err
 	}
-	if syncKey == maxSyncKey {
+	if syncKey >= maxSyncKey {
 		return nil
 	}
 
-	return a.SendSyncMessageFromKeyToKeyToUser(syncKey, maxSyncKey, userId, token)
+	fromSyncKey := syncKey + 1
+	toSyncKey := maxSyncKey
+	return a.SendSyncMessageFromKeyToKeyToUser(fromSyncKey, toSyncKey, userId, token)
 }
 
 func (a *AccessClient) SendSyncMessageFromKeyToKeyToUser(fromSyncKey uint64, toSyncKey uint64, userId string, token string) error {
 
-	forwardClient := grpcPb.NewForwardToAccessClient(a.conn)
+	forwardToAccessClient := grpcPb.NewForwardToAccessClient(a.conn)
 	for syncKey := fromSyncKey; syncKey <= toSyncKey; syncKey++ {
 		message := &bean.Message{
 			UserId:  userId,
@@ -76,14 +78,24 @@ func (a *AccessClient) SendSyncMessageFromKeyToKeyToUser(fromSyncKey uint64, toS
 			Type:     tlpPb.MessageTypeSyncMessage,
 			ProtoBuf: protobuf,
 		}
-		_, err = forwardClient.ForwardTLP(netContext.Background(), request)
+		_, err = forwardToAccessClient.ForwardTLP(netContext.Background(), request)
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 	}
-
-	return nil
+	syncFinMessage := &tlpPb.SyncFinInform{
+		SyncKey: toSyncKey,
+	}
+	protobuf, _ := proto.Marshal(syncFinMessage)
+	request := &grpcPb.ForwardTLPRequest{
+		UserId:   userId,
+		Token:    token,
+		Type:     tlpPb.MessageTypeSyncFinInform,
+		ProtoBuf: protobuf,
+	}
+	_, err := forwardToAccessClient.ForwardTLP(netContext.Background(), request)
+	return err
 }
 
 func (a *AccessClient) SendMessage(message *bean.Message, token string) error {
@@ -95,7 +107,7 @@ func (a *AccessClient) SendMessage(message *bean.Message, token string) error {
 		return err
 	}
 	for i := syncKey + 1; i <= message.SyncKey; i++ {
-		forwardClient := grpcPb.NewForwardToAccessClient(a.conn)
+		forwardToAccessClient := grpcPb.NewForwardToAccessClient(a.conn)
 		syncMessage := &tlpPb.SyncMessage{
 			Type:       (int32)(message.Type),
 			Id:         message.Id,
@@ -112,18 +124,10 @@ func (a *AccessClient) SendMessage(message *bean.Message, token string) error {
 			Type:     tlpPb.MessageTypeSyncMessage,
 			ProtoBuf: protobuf,
 		}
-		_, err := forwardClient.ForwardTLP(netContext.Background(), request)
+		_, err := forwardToAccessClient.ForwardTLP(netContext.Background(), request)
 		if err != nil {
 			log.Println(err)
 		}
 	}
-
-	//MessageTypeSyncMessage
-
-	// if syncKey+4 < message.SyncKey { //直接推送
-
-	// } else { //发送同步通知
-
-	// }
 	return nil
 }

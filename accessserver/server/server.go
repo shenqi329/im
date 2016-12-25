@@ -106,7 +106,7 @@ func (s *Server) Run(grpcServerAddr string) {
 }
 
 func (s *Server) ForwardTLP(request *accessserverGrpcPb.ForwardTLPRequest) (*accessserverGrpcPb.ForwardTLPResponse, error) {
-	log.Println("ForwardTLP")
+	log.Println("ForwardTLP", request.String())
 	s.forwardTLPRequestChan <- request
 	return nil, nil
 }
@@ -194,12 +194,11 @@ func (s *Server) transToLogicServer(request *grpcPb.ForwardTLPRequest, protocolR
 	response, err := rpcClient.ForwardTLP(netContext.Background(), request)
 
 	if err != nil {
-		s.sendErrorProtocolToChan(accessError.CommonInternalServerError, accessError.ErrorCodeToText(accessError.CommonInternalServerError), request, protocolRespChan)
+		log.Println(err)
 		return
 	}
-
 	if !accessError.CodeIsSuccess(response.Code) {
-		s.sendErrorProtocolToChan(response.Code, response.Desc, request, protocolRespChan)
+		log.Println(response)
 		return
 	}
 
@@ -208,9 +207,10 @@ func (s *Server) transToLogicServer(request *grpcPb.ForwardTLPRequest, protocolR
 	if request.MessageType == tlpPb.MessageTypeDeviceLoginRequest {
 		isLogin = true
 	}
-	// if rpcRequest.MessageType == grpcPb.MessageTypeDeviceLoginRequest {
-
-	// }
+	if response.ProtoBuf == nil || response.MessageType <= 0 {
+		//没有数据,或者消息类型不对,则不需要将消息在发给客户端
+		return
+	}
 
 	protocolBuf, _ := coder.EncoderProtoBuf((int)(response.MessageType), response.ProtoBuf)
 
@@ -219,20 +219,6 @@ func (s *Server) transToLogicServer(request *grpcPb.ForwardTLPRequest, protocolR
 		connId:      request.RpcInfo.ConnId,
 		isLogin:     isLogin,
 		isLogout:    isLogout,
-	}
-}
-
-func (s *Server) sendErrorProtocolToChan(code string, desc string, request *grpcPb.ForwardTLPRequest, protocolRespChan chan<- *ProtocolResp) {
-	response := &grpcPb.Response{
-		Code: code,
-		Desc: desc,
-	}
-	protoBuf, _ := proto.Marshal(response)
-	protocolBuf, _ := coder.EncoderProtoBuf((int)(request.MessageType+1), protoBuf)
-
-	protocolRespChan <- &ProtocolResp{
-		protocolBuf: protocolBuf,
-		connId:      request.RpcInfo.ConnId,
 	}
 }
 
@@ -355,6 +341,9 @@ func (s *Server) connectIMServer(reqChan <-chan *Request, closeChan <-chan uint6
 		case protocolBufChan := <-s.protocolRespChan:
 			{
 				connInfo := connMap[protocolBufChan.connId]
+				if connInfo == nil {
+					break
+				}
 				connInfo.conn.Write(protocolBufChan.protocolBuf)
 				if protocolBufChan.isLogin {
 					connInfo.isLogin = true

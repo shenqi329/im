@@ -16,13 +16,8 @@ const (
 	MessageTypeCreateMessageRequest  = 7
 	MessageTypeCreateMessageResponse = 8
 	MessageTypeSyncMessage           = 9
-
-	// MessageTypeCreateSessionRequest       = 10001
-	// MessageTypeCreateSessionResponse      = 10002
-	// MessageTypeAddSessionUsersRequest     = 10003
-	// MessageTypeAddSessionUsersResponse    = 10004
-	// MessageTypeDeleteSessionUsersRequest  = 10005
-	// MessageTypeDeleteSessionUsersResponse = 10006
+	MessageTypeSyncFinInform         = 10
+	MessageTypeSyncFinResponse       = 11
 )
 
 var kinds = map[MessageType]func() proto.Message{
@@ -35,13 +30,8 @@ var kinds = map[MessageType]func() proto.Message{
 	MessageTypeCreateMessageRequest:  func() proto.Message { return &CreateMessageRequest{} },
 	MessageTypeCreateMessageResponse: func() proto.Message { return &CreateMessageResponse{} },
 	MessageTypeSyncMessage:           func() proto.Message { return &SyncMessage{} },
-
-	// MessageTypeCreateSessionRequest:       func() proto.Message { return &CreateSessionRequest{} },
-	// MessageTypeCreateSessionResponse:      func() proto.Message { return &CreateSessionResponse{} },
-	// MessageTypeAddSessionUsersRequest:     func() proto.Message { return &AddSessionUsersRequest{} },
-	// MessageTypeAddSessionUsersResponse:    func() proto.Message { return &Response{} },
-	// MessageTypeDeleteSessionUsersRequest:  func() proto.Message { return &DeleteSessionUsersRequest{} },
-	// MessageTypeDeleteSessionUsersResponse: func() proto.Message { return &Response{} },
+	MessageTypeSyncFinInform:         func() proto.Message { return &SyncFinInform{} },
+	MessageTypeSyncFinResponse:       func() proto.Message { return &SyncFinResponse{} },
 }
 
 func Factory(messageType MessageType) proto.Message {

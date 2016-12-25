@@ -90,40 +90,14 @@ func insertMessageToUserInSession(ctx *server.Context, request *tlpPb.CreateMess
 	}
 }
 
-// func xxxxxxxxxxxxxxxxxxx(tokenConnInfoChan chan<- int64, sessionId int64) {
+func HandleSyncFinResponse(ctx *server.Context, response *tlpPb.SyncFinResponse, userId string) error {
 
-// 	var sessionMaps []*logicserverBean.SessionMap
-
-// 	err := dao.NewDao().Find(&sessionMaps,
-// 		&logicserverBean.SessionMap{
-// 			SessionId: sessionId,
-// 		})
-// 	if err != nil {
-// 		log.Println(err)
-// 		return
-// 	}
-
-// 	for _, sessionMap := range sessionMaps {
-// 		xxx(tokenConnInfoChan, sessionMap)
-// 	}
-// }
-
-// func xxx(tokenConnInfoChan chan<- int64, sessionMap *logicserverBean.SessionMap) {
-
-// 	var tokens []*logicserverBean.Token
-
-// 	err := dao.NewDao().Find(&tokens,
-// 		&logicserverBean.Token{
-// 			UserId: sessionMap.UserId,
-// 		})
-// 	if err != nil {
-// 		log.Println(err)
-// 		return
-// 	}
-
-// 	for _, token := range tokens {
-// 		//log.Println(token.Id)
-// 		tokenConnInfoChan <- token.Id
-// 		//token.Id 根据登录的id去发送
-// 	}
-// }
+	oldSyncKey, err := dao.SyncKeyByUserId(userId)
+	if err != nil {
+		return err
+	}
+	if (uint64)(oldSyncKey) >= (uint64)(response.SyncKey) {
+		return nil
+	}
+	return dao.UpdateSyncKey((int64)(response.SyncKey), (int64)(oldSyncKey), userId)
+}
