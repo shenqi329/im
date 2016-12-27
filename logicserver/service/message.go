@@ -49,6 +49,7 @@ func HandleCreateMessage(ctx *server.Context, request *tlpPb.CreateMessageReques
 		log.Println(err)
 		return nil, logicserverError.ErrorInternalServerError
 	}
+	ctx.SendMessageToUser(message)
 
 	go insertMessageToUserInSession(ctx, request, userId, &timeNow)
 
@@ -84,7 +85,7 @@ func insertMessageToUserInSession(ctx *server.Context, request *tlpPb.CreateMess
 			}
 			err := messageInsert(message)
 			if err == nil {
-				ctx.PushMessageToClient(message)
+				ctx.SendMessageToUser(message)
 			}
 		}
 	}

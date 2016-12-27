@@ -63,7 +63,7 @@ func (c *Client) registe() {
 }
 
 func (c *Client) login() {
-	log.Println(c.Token)
+	//log.Println(c.Token)
 	if runtime.GOOS == "windows" {
 		loginRequest := &tlpPb.DeviceLoginRequest{
 			Rid:      c.GetRid(),
@@ -99,7 +99,7 @@ func (c *Client) login() {
 }
 
 func (c *Client) toLogin() {
-	log.Println(c.loginState)
+	//log.Println(c.loginState)
 	if c.loginState == LoginStateNone {
 		if c.Token == "" {
 			c.registe()

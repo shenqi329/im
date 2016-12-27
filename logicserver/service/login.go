@@ -32,7 +32,7 @@ func HandleLogin(ctx *server.Context, deviceLoginRequest *tlpPb.DeviceLoginReque
 
 	id, _ := strconv.ParseUint(deviceLoginRequest.Token, 10, 64)
 
-	tokenBean := &logicserverBean.Token{
+	tokenBean := &logicserverBean.Account{
 		Id:       (int64)(id),
 		AppId:    deviceLoginRequest.AppId,
 		DeviceId: deviceLoginRequest.DeviceId,

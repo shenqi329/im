@@ -11,7 +11,7 @@ type Context struct {
 	Server *Server
 }
 
-func (c *Context) PushMessageToClient(message *bean.Message) error {
+func (c *Context) SendMessageToUser(message *bean.Message) error {
 	c.Server.SendMessageToUser(message)
 	return nil
 }

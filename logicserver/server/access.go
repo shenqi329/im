@@ -106,28 +106,5 @@ func (a *AccessClient) SendMessage(message *bean.Message, token string) error {
 		log.Println(err)
 		return err
 	}
-	for i := syncKey + 1; i <= message.SyncKey; i++ {
-		forwardToAccessClient := grpcPb.NewForwardToAccessClient(a.conn)
-		syncMessage := &tlpPb.SyncMessage{
-			Type:       (int32)(message.Type),
-			Id:         message.Id,
-			SessionId:  message.SessionId,
-			UserId:     message.UserId,
-			Content:    message.Content,
-			SyncKey:    message.SyncKey,
-			CreateTime: message.CreateTime.Unix(),
-		}
-		protobuf, _ := proto.Marshal(syncMessage)
-		request := &grpcPb.ForwardTLPRequest{
-			UserId:   message.UserId,
-			Token:    token,
-			Type:     tlpPb.MessageTypeSyncMessage,
-			ProtoBuf: protobuf,
-		}
-		_, err := forwardToAccessClient.ForwardTLP(netContext.Background(), request)
-		if err != nil {
-			log.Println(err)
-		}
-	}
-	return nil
+	return a.SendSyncMessageFromKeyToKeyToUser(syncKey+1, message.SyncKey, message.UserId, token)
 }

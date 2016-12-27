@@ -5,7 +5,7 @@ import (
 )
 
 type (
-	Token struct {
+	Account struct {
 		Id         int64      `xorm:"'id'" json:"id,omitempty"`
 		AppId      string     `xorm:"'app_id'" json:"appId,omitempty"`
 		UserId     string     `xorm:"'user_id'" json:"userId,omitempty"`
@@ -17,6 +17,6 @@ type (
 	}
 )
 
-func (t Token) TableName() string {
-	return "t_token"
+func (t Account) TableName() string {
+	return "t_Account"
 }

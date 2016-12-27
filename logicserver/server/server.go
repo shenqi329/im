@@ -40,6 +40,7 @@ func (s *Server) SendMessageToUser(message *bean.Message) {
 
 func (s *Server) SendSyncMessageToUser(userId string) {
 	userInfo := s.loginInfoManager.SafeGetLoginInfoWithUserId(userId)
+	log.Println(bean.StructToJsonString(userInfo))
 	if userInfo == nil {
 		return
 	}
@@ -60,8 +61,8 @@ func (s *Server) HandleOffline(request *grpcPb.DeviceOfflineRequest) (err error)
 func (s *Server) HandleLogin(request *tlpPb.DeviceLoginRequest) (err error) {
 
 	s.loginInfoManager.SafeAddLoginInfo(request.Token, request.UserId)
-	//log.Println(bean.StructToJsonString(s.loginInfoManager.SafeGetLoginInfoWithUserId(request.UserId)))
-	//log.Println(bean.StructToJsonString(s.loginInfoManager.SafeGetLoginInfoWithToken(request.Token)))
+	log.Println(bean.StructToJsonString(s.loginInfoManager.SafeGetLoginInfoWithUserId(request.UserId)))
+	log.Println(bean.StructToJsonString(s.loginInfoManager.SafeGetLoginInfoWithToken(request.Token)))
 	s.SendSyncMessageToUser(request.UserId)
 	return nil
 }

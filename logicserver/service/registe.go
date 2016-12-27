@@ -62,7 +62,7 @@ func HandleRegiste(deviceRegisteRequest *tlpPb.DeviceRegisteRequest) (protoMessa
 	log.Println(deviceRegisteRequest)
 
 	createTime := time.Now()
-	tokenBean := &logicserverBean.Token{
+	tokenBean := &logicserverBean.Account{
 		UserId:     maps["id"].(string),
 		DeviceId:   deviceRegisteRequest.DeviceId,
 		AppId:      deviceRegisteRequest.AppId,
